@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="sort_types">
+        <item>연관성높은순</item>
+        <item>인기많은순</item>
+        <item>최신순</item>
+    </string-array>
+</resources>

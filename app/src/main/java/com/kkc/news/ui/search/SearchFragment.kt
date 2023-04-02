@@ -11,10 +11,6 @@ import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.OnScrollListener
-import androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE
 import com.kkc.news.R
 import com.kkc.news.base.BaseFragment
 import com.kkc.news.databinding.FragmentSearchBinding
@@ -50,21 +46,9 @@ class SearchFragment : BaseFragment<FragmentSearchBinding>(R.layout.fragment_sea
 
     override fun uiInit() {
         binding.searchedArticles.adapter = adapter
-        binding.searchedArticles.addOnScrollListener(object : OnScrollListener() {
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                super.onScrollStateChanged(recyclerView, newState)
-
-                if (newState == SCROLL_STATE_IDLE) {
-                    val lastVisiblePosition = (recyclerView.layoutManager as LinearLayoutManager)
-                        .findLastCompletelyVisibleItemPosition()
-                    val totalCount = adapter.itemCount - 5
-
-                    if (lastVisiblePosition >= totalCount && adapter.itemCount != 0) {
-                        viewModel.requestLoadMore()
-                    }
-                }
-            }
-        })
+        setRecyclerViewLoadMore(binding.searchedArticles, 5) {
+            viewModel.requestLoadMore()
+        }
     }
 
     private fun searchClickObserve() {

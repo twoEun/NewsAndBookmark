@@ -43,88 +43,8 @@ class HomeViewModel @Inject constructor(
         get() = _bookMarks
 
     private val bookMarkObserver = Observer<List<BookMark>> { bookMarkList ->
-        val tempHeaderNews = recentArticles.value ?: emptyList()
-        val tempHeadlines = headlineArticles.value ?: emptyList()
-
-        val processedHeader = tempHeaderNews.map { article ->
-            val headerBookmark = bookMarkList.find { bookmark ->
-                article.author == bookmark.author &&
-                    article.articleTitle == bookmark.title &&
-                    article.articleDescription == bookmark.description
-            }
-
-            if (headerBookmark != null) {
-                ArticleData(
-                    articleSource = article.articleSource,
-                    author = article.author,
-                    articleTitle = article.articleTitle,
-                    articleDescription = article.articleDescription,
-                    articleUrl = article.articleUrl,
-                    articleImage = article.articleImage,
-                    publishedAt = article.publishedAt,
-                    articleContent = article.articleContent,
-                    isBookMarked = true,
-                    bookmarkIndex = headerBookmark.index
-                )
-            } else {
-                if (article.isBookMarked) {
-                    ArticleData(
-                        articleSource = article.articleSource,
-                        author = article.author,
-                        articleTitle = article.articleTitle,
-                        articleDescription = article.articleDescription,
-                        articleUrl = article.articleUrl,
-                        articleImage = article.articleImage,
-                        publishedAt = article.publishedAt,
-                        articleContent = article.articleContent,
-                        isBookMarked = false,
-                        bookmarkIndex = -1
-                    )
-                } else {
-                    article
-                }
-            }
-        }
-
-        val processedHeadLine = tempHeadlines.map { article ->
-            val headlineBookmark = bookMarkList.find { bookmark ->
-                article.author == bookmark.author &&
-                    article.articleTitle == bookmark.title &&
-                    article.articleDescription == bookmark.description
-            }
-
-            if (headlineBookmark != null) {
-                ArticleData(
-                    articleSource = article.articleSource,
-                    author = article.author,
-                    articleTitle = article.articleTitle,
-                    articleDescription = article.articleDescription,
-                    articleUrl = article.articleUrl,
-                    articleImage = article.articleImage,
-                    publishedAt = article.publishedAt,
-                    articleContent = article.articleContent,
-                    isBookMarked = true,
-                    bookmarkIndex = headlineBookmark.index
-                )
-            } else {
-                if (article.isBookMarked) {
-                    ArticleData(
-                        articleSource = article.articleSource,
-                        author = article.author,
-                        articleTitle = article.articleTitle,
-                        articleDescription = article.articleDescription,
-                        articleUrl = article.articleUrl,
-                        articleImage = article.articleImage,
-                        publishedAt = article.publishedAt,
-                        articleContent = article.articleContent,
-                        isBookMarked = false,
-                        bookmarkIndex = -1
-                    )
-                } else {
-                    article
-                }
-            }
-        }
+        val processedHeader = bookMarkCheck(recentArticles.value ?: emptyList(), bookMarkList)
+        val processedHeadLine = bookMarkCheck(headlineArticles.value ?: emptyList(), bookMarkList)
 
         _recentArticles.value = processedHeader
         _headlineArticles.value = processedHeadLine
@@ -136,6 +56,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun requestFirstData() {
+        _progressVisible.postValue(true)
         val latestKeyword = sharedPreferenceRepository.getLatestSearchKeyword()
         Single.zip(
             if (latestKeyword.isNullOrBlank()) {
@@ -154,6 +75,7 @@ class HomeViewModel @Inject constructor(
                 "general"
             )
         ) { recentNews, headlineNews ->
+            _progressVisible.postValue(false)
             if (recentPageNum == 1 && recentNews.isEmpty()) {
                 _noData.postValue(true)
             }
@@ -162,10 +84,10 @@ class HomeViewModel @Inject constructor(
             tempList.addAll(recentNews)
             _recentArticles.postValue(tempList)
 
-            recentPageNum = if (recentNews.size == sizeOfPage) {
+            if (recentNews.size == sizeOfPage) {
                 recentPageNum++
             } else {
-                -1
+                recentPageNum = -1
             }
 
             if (headLinePageNum == 1 && headlineNews.isEmpty()) {
@@ -176,10 +98,10 @@ class HomeViewModel @Inject constructor(
             tempHeadLineList.addAll(headlineNews)
             _headlineArticles.postValue(tempHeadLineList)
 
-            headLinePageNum = if (headlineNews.size == sizeOfPage) {
+            if (headlineNews.size == sizeOfPage) {
                 headLinePageNum++
             } else {
-                -1
+                headLinePageNum = -1
             }
         }.observeOn(AndroidSchedulers.mainThread())
             .subscribeOn(Schedulers.io())
@@ -187,6 +109,7 @@ class HomeViewModel @Inject constructor(
                 getBookMarks()
             }
             .subscribe({}, { err ->
+                _progressVisible.postValue(false)
                 err.printStackTrace()
             })
     }
@@ -206,6 +129,7 @@ class HomeViewModel @Inject constructor(
     @SuppressLint("CheckResult")
     private fun getRecentArticles() {
         if (recentPageNum != -1) {
+            _progressVisible.postValue(true)
             val latestKeyword = sharedPreferenceRepository.getLatestSearchKeyword()
             newsRepository.searchArticles(
                 latestKeyword,
@@ -216,6 +140,7 @@ class HomeViewModel @Inject constructor(
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe({ result ->
+                    _progressVisible.postValue(false)
                     if (recentPageNum == 1 && result.isEmpty()) {
                         _noData.postValue(true)
                     }
@@ -224,12 +149,13 @@ class HomeViewModel @Inject constructor(
                     tempList.addAll(result)
                     _recentArticles.postValue(tempList)
 
-                    recentPageNum = if (result.size == sizeOfPage) {
+                    if (result.size == sizeOfPage) {
                         recentPageNum++
                     } else {
-                        -1
+                        recentPageNum = -1
                     }
                 }, { err ->
+                    _progressVisible.postValue(false)
                     err.printStackTrace()
                 })
         } else {
@@ -240,6 +166,7 @@ class HomeViewModel @Inject constructor(
     @SuppressLint("CheckResult")
     private fun getHeadLineArticles() {
         if (headLinePageNum != -1) {
+            _progressVisible.postValue(true)
             newsRepository.getHeadLineArticles(
                 headLinePageNum,
                 sizeOfPage,
@@ -248,6 +175,7 @@ class HomeViewModel @Inject constructor(
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe({ result ->
+                    _progressVisible.postValue(false)
                     if (headLinePageNum == 1 && result.isEmpty()) {
                         _noData.postValue(true)
                     }
@@ -256,12 +184,13 @@ class HomeViewModel @Inject constructor(
                     tempHeadLineList.addAll(result)
                     _headlineArticles.postValue(tempHeadLineList)
 
-                    headLinePageNum = if (result.size == sizeOfPage) {
+                    if (result.size == sizeOfPage) {
                         headLinePageNum++
                     } else {
-                        -1
+                        headLinePageNum = -1
                     }
                 }, { err ->
+                    _progressVisible.postValue(false)
                     err.printStackTrace()
                 })
         } else {

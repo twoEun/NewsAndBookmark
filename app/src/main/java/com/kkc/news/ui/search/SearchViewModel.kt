@@ -41,48 +41,7 @@ class SearchViewModel @Inject constructor(
         get() = _bookMarks
 
     private val bookMarkObserver = Observer<List<BookMark>> { bookMarkList ->
-        val searchedNews = searchedArticles.value ?: emptyList()
-
-        val processedNews = searchedNews.map { article ->
-            val searchedBookmark = bookMarkList.find { bookmark ->
-                article.author == bookmark.author &&
-                    article.articleTitle == bookmark.title &&
-                    article.articleDescription == bookmark.description
-            }
-
-            if (searchedBookmark != null) {
-                ArticleData(
-                    articleSource = article.articleSource,
-                    author = article.author,
-                    articleTitle = article.articleTitle,
-                    articleDescription = article.articleDescription,
-                    articleUrl = article.articleUrl,
-                    articleImage = article.articleImage,
-                    publishedAt = article.publishedAt,
-                    articleContent = article.articleContent,
-                    isBookMarked = true,
-                    bookmarkIndex = searchedBookmark.index
-                )
-            } else {
-                if (article.isBookMarked) {
-                    ArticleData(
-                        articleSource = article.articleSource,
-                        author = article.author,
-                        articleTitle = article.articleTitle,
-                        articleDescription = article.articleDescription,
-                        articleUrl = article.articleUrl,
-                        articleImage = article.articleImage,
-                        publishedAt = article.publishedAt,
-                        articleContent = article.articleContent,
-                        isBookMarked = false,
-                        bookmarkIndex = -1
-                    )
-                } else {
-                    article
-                }
-            }
-        }
-
+        val processedNews = bookMarkCheck(searchedArticles.value ?: emptyList(), bookMarkList)
         _searchedArticles.value = processedNews
     }
 
@@ -107,6 +66,7 @@ class SearchViewModel @Inject constructor(
     private fun searchArticles() {
         val keywordEnable = !keyword.value.isNullOrBlank()
         if (pageNum != -1 && keywordEnable) {
+            _progressVisible.postValue(true)
             newsRepository.searchArticles(
                 keyword.value ?: "",
                 currentSortType.typeText,
@@ -116,6 +76,7 @@ class SearchViewModel @Inject constructor(
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe({ result ->
+                    _progressVisible.postValue(false)
                     if (pageNum == 1 && result.isEmpty()) {
                         _noData.postValue(true)
                     }
@@ -127,31 +88,16 @@ class SearchViewModel @Inject constructor(
                     }
 
                     tempList.addAll(result)
-                    val processedList = tempList.map { article ->
-                        val headerBookmark = bookMarks.value?.find { bookmark ->
-                            article.author == bookmark.author &&
-                                article.articleTitle == bookmark.title &&
-                                article.articleDescription == bookmark.description
-                        }
-
-                        if (headerBookmark != null) {
-                            article.isBookMarked = true
-                            article.bookmarkIndex = headerBookmark.index
-                        } else {
-                            article.isBookMarked = false
-                            article.bookmarkIndex = -1
-                        }
-
-                        article
-                    }
+                    val processedList = bookMarkCheck(tempList, bookMarks.value ?: emptyList())
                     _searchedArticles.postValue(processedList)
 
-                    pageNum = if (result.size == sizeOfPage) {
+                    if (result.size == sizeOfPage) {
                         pageNum++
                     } else {
-                        -1
+                        pageNum = -1
                     }
                 }, { err ->
+                    _progressVisible.postValue(false)
                     err.printStackTrace()
                 })
         } else {

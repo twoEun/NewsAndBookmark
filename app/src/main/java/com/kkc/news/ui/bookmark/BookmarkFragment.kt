@@ -1,12 +1,9 @@
 package com.kkc.news.ui.bookmark
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.kkc.news.R
 import com.kkc.news.base.BaseFragment
 import com.kkc.news.databinding.FragmentBookmarkBinding
@@ -33,7 +30,6 @@ class BookmarkFragment : BaseFragment<FragmentBookmarkBinding>(R.layout.fragment
 
     private fun bookMarkListObserve() {
         val bookMarkListObserver = Observer<List<BookMark>> { bookMarkList ->
-            Log.d("BOOK_MARK_SIZE", "${bookMarkList.size}")
             adapter.submitList(bookMarkList)
         }
 

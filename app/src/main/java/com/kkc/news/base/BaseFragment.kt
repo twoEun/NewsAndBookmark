@@ -8,6 +8,11 @@ import androidx.annotation.LayoutRes
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.OnScrollListener
+import androidx.viewpager2.widget.ViewPager2
 
 abstract class BaseFragment<T : ViewDataBinding>(@LayoutRes private val layoutRes: Int) : Fragment() {
     protected lateinit var binding: T
@@ -25,6 +30,29 @@ abstract class BaseFragment<T : ViewDataBinding>(@LayoutRes private val layoutRe
         super.onViewCreated(view, savedInstanceState)
         uiInit()
         disableLoadMoreObserve()
+    }
+
+    protected fun setRecyclerViewLoadMore(
+        recyclerView: RecyclerView,
+        offset: Int,
+        callback: () -> Unit
+    ) {
+        recyclerView.addOnScrollListener(object : OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                if (newState == ViewPager2.SCROLL_STATE_IDLE) {
+                    recyclerView.adapter?.let {
+                        val lastVisiblePosition = (recyclerView.layoutManager as LinearLayoutManager)
+                            .findLastCompletelyVisibleItemPosition()
+                        val totalCount = it.itemCount - offset
+
+                        if (lastVisiblePosition >= totalCount && it.itemCount != 0) {
+                            callback.invoke()
+                        }
+                    }
+                }
+            }
+        })
     }
 
     abstract fun uiInit()

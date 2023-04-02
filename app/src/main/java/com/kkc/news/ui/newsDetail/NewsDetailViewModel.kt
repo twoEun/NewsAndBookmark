@@ -33,8 +33,8 @@ class NewsDetailViewModel @Inject constructor(
     val source: LiveData<String>
         get() = _source
 
-    private val _author = MutableLiveData<String>()
-    val author: LiveData<String>
+    private val _author = MutableLiveData<String?>()
+    val author: LiveData<String?>
         get() = _author
 
     private val _title = MutableLiveData<String>()
@@ -45,8 +45,8 @@ class NewsDetailViewModel @Inject constructor(
     val newsImage: LiveData<String?>
         get() = _newsImage
 
-    private val _newsContent = MutableLiveData<String>()
-    val newsContent: LiveData<String>
+    private val _newsContent = MutableLiveData<String?>()
+    val newsContent: LiveData<String?>
         get() = _newsContent
 
     init {
